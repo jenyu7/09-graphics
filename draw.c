@@ -20,7 +20,69 @@
   Color should be set differently for each polygon.
   ====================*/
 void scanline_convert( struct matrix *points, int i, screen s, zbuffer zb ) {
+  int a = i;
+  int b = i + 1;
+  int c = i + 2;
+  int tmp;
+  //determine the value of tmp var
+  if (points->m[1][a] > points->m[1][b]){
+    tmp = a;
+    a = b;
+    b = tmp;
+  }
+  if (points->m[1][a] > points->m[1][c]){
+    tmp = a;
+    b = c;
+    c = tmp;
+  }
+  if (points->m[1][b] > points->m[1][c]){
+    tmp = b;
+    b = c;
+    c = tmp;
+  }
+  
+  //extracting values from matrix
+  float x1, y1, z1, x2, y2, z2, x3, y3, z3;
+  x1 = points->m[0][a];
+  y1 = points->m[1][a];
+  z1 = points->m[2][a];
 
+  x2 = points->m[0][b];
+  y2 = points->m[1][b];
+  z2 = points->m[2][b];
+
+  x3 = points->m[0][c];
+  y3 = points->m[1][c];
+  z3 = points->m[2][c];
+
+  //set colors randomly
+  color clr;
+  clr.red = rand() % 255;
+  clr.green = rand() % 255;
+  clr.blue = rand() % 255;
+
+  //draw lines
+  float xa = x1;
+  float xb = x1;
+  float y;
+  float za = z1;
+  float zb1 = z1;
+  for(y = y1; y < y2; y++){
+    draw_line(xa, y, za, xb, y, zb1, s, zb, clr);
+    xa += (x3 - x1) / (y3 - y1);
+    za += (z3 - z1) / (y3 - y1);
+    xb += (x2 - x1) / (y2 - y1);
+    zb1 += (z2 - z1) / (y2 - y1);
+  }
+  xb = x2;
+  zb1 = z2;
+  for (y = y2; y < y3; y ++){
+    draw_line(xa, y, za, xb, y, zb1, s, zb, clr);
+    xa += (x3 - x1) / (y3 - y1);
+    za += (z3 - z1) / (y3 - y1);
+    xb += (x3 - x2) / (y3 - y2);
+    zb1 += (z3 - z2) / (y3 - y2);
+  }  
 }
 
 /*======== void add_polygon() ==========
@@ -72,7 +134,8 @@ void draw_polygons(struct matrix *polygons, screen s, zbuffer zb, color c ) {
     normal = calculate_normal(polygons, point);
 
     if ( normal[2] > 0 ) {
-
+      scanline_convert(polygons, point, s, zb);
+      /*
       draw_line( polygons->m[0][point],
                  polygons->m[1][point],
                  polygons->m[2][point],
@@ -94,6 +157,7 @@ void draw_polygons(struct matrix *polygons, screen s, zbuffer zb, color c ) {
                  polygons->m[1][point+2],
                  polygons->m[2][point+2],
                  s, zb, c);
+      */
     }
   }
 }
@@ -518,15 +582,17 @@ void draw_line(int x0, int y0, double z0,
   int loop_start, loop_end;
 
   //swap points if going right -> left
-  int xt, yt;
+  int xt, yt, zt;
   if (x0 > x1) {
     xt = x0;
     yt = y0;
+    zt = z0;
     x0 = x1;
     y0 = y1;
     z0 = z1;
     x1 = xt;
     y1 = yt;
+    z1 = zt;
   }
 
   x = x0;
@@ -575,10 +641,12 @@ void draw_line(int x0, int y0, double z0,
       loop_end = y;
     }
   }
-
+  double zlope = (z1-z0)/(loop_end-loop_start); //:)))))
+  double z = z0;
+  
   while ( loop_start < loop_end ) {
 
-    plot( s, zb, c, x, y, 0);
+    plot( s, zb, c, x, y, z);
     if ( (wide && ((A > 0 && d > 0) ||
                    (A < 0 && d < 0)))
          ||
@@ -594,6 +662,7 @@ void draw_line(int x0, int y0, double z0,
       d+= d_east;
     }
     loop_start++;
+    z += zlope;
   } //end drawing loop
-  plot( s, zb, c, x1, y1, 0 );
+  plot( s, zb, c, x1, y1, z1 );
 } //end draw_line
