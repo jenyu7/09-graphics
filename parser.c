@@ -85,7 +85,7 @@ void parse_file ( char * filename,
   clear_screen(s);
   clear_zbuffer(zb);
   struct stack * csystems = new_stack();
-
+  srand(8);
   color c;
   c.red = 0;
   c.green = 0;
